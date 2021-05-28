@@ -1,0 +1,12 @@
+similar_smiles.csv and unique_smiles.csv 
+come from taking a subset of the training data and gathering all other molecules that are similar to them from chembal.
+
+See the function on_colab_get_similar_smiles() in ../Data Wrangling.ipynb
+
+
+I downloaded data\UnlabeledSmilesDataset.csv from
+
+https://www.kaggle.com/antifact/molecular-translation-smiles-csv/code
+
+There are no descriptions of the smiles at all. It is just a 250k large list of smiles without any features. 
+I don't if they are valid smiles or where they come from.
