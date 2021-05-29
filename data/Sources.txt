@@ -9,4 +9,9 @@ I downloaded data\UnlabeledSmilesDataset.csv from
 https://www.kaggle.com/antifact/molecular-translation-smiles-csv/code
 
 There are no descriptions of the smiles at all. It is just a 250k large list of smiles without any features. 
-I don't if they are valid smiles or where they come from.
+I don't if they are valid smiles or where they come from. Might be good enough for unlabeled feature extraction
+
+
+Caster_data came from this repo https://github.com/kexinhuang12345/CASTER
+
+This is the repo with the to train the NN for the CASTER Drug Drug interaction Paper. 
