@@ -1,2 +1,8 @@
 
 venv/*
+data/color_refined_molecules_2_hop.csv
+data/color_refined_molecules_1_hop.csv
+data/color_refined_molecules_4_hop.csv
+data/color_refined_molecules_6_hop.csv
+data/color_refined_molecules_5_hop.csv
+data/color_refined_molecules_3_hop.csv
