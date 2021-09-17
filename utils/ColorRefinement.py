@@ -10,51 +10,51 @@ import copy
 
 """
 
-This is a implementation of the Color Refinement algorithm (also known as 1-dimensional Weisfeiler-Leman algorithm) that initializes node colors as a hash of node attributes.
+This is an implementation of the Color Refinement algorithm 
+(also known as 1-dimensional Weisfeiler-Leman algorithm) that initializes node colors as a hash of node attributes.
+
 Node coloring contains information about both graph structure and node attributes. It does not contain information about edge attributes.
- 
-Primarily based on this Lecture:
-        Standford Online, Professor Jure Leskovec
-        CS224W: Machine Learning with Graphs | 2021 | Lecture 2.3 - Traditional Feature-based Methods: Graph
-        https://www.youtube.com/watch?v=buzsHTa4Hgs&t=701s 
 
+Primarily based on this lecture:
+       Stanford Online, Professor Jure Leskovec
+       CS224W: Machine Learning with Graphs | 2021 | Lecture 2.3 - Traditional Feature-based Methods: Graph
+       https://www.youtube.com/watch?v=buzsHTa4Hgs&t=701s
+ 
+ 
+Embed a graph G into a bag of colors of size K based on node attributes and local neighborhoods.
+There is a (I*N)/K probability of a spurious hash collision where I is the number of iterations, N is the number of nodes, and K is the number of buckets.
 
- Embed a graph G into a bag of colors of size K based on node attributes and local neighborhoods.
- There is a (I*N)/K probability of a spurious hash collision where I is the number of iterations, N is the number of nodes, and K is the number of buckets.
- 
- Pseudocode code:
- 1. Each Node is assigned color_0 with hash(node.attributes) % K
-      create_inital_color_graph()
- 2. For each iteration IN each node is assigned the attribute color_I = hash(current_color, product of neighbor colors) % K
-      create_color_hash_function()
-  Interpretation:
-  For color_0 a when two nodes, either within the same graph or between graphs, have the same color C, they are the same node.
-      Because hashing is deterministic there is no possibility of a False Negative, but a 1/K possibility of a False Positive.
-  color_1: contains all the 1 hop information around the node.
-      If two nodes have the same color it is very likely that they have the same 1 hop neighborhood.
-  color_I: Contains the I hop information around the node. If two nodes have the same I value it is very likely that their I hop neighborhood is identical.
- 
-  Trade Offs:
-  The number of buckets, K, determines how many unique I hope neighborhood's are distinguished.
-  Larger K values cause lower probability of a False Positive saying that two nodes have identical neighborhoods but increase sparsity.
- 
- 
-   Usages:
- 
-   Two graphs can be compared by creating a histogram of different colors.
- 
-   If one graph has
- 
-   Graph_A.Color_3  = [1:2, 2:0, 3:3]
-   Graph_B.Color_3  = [1:2, 2:1, 3:2]
- 
+Pseudocode code:
 
-  Those values can be used to determine the similarity between the graphs. 
-  The count of each color can be used to compare identical neighborhoods within different graphs.
-   
-Because each color can be represented as a vector of Size K. Each count of the different colors can be treated as features and then used in traditional ML downstream.
-
+    1. Each Node is assigned color_0 with hash(node.attributes) % K
+        see create_inital_color_graph()
+    2. For each iteration I each node is assigned the attribute color_I = hash(current_color, product of neighbor colors) % (modulo) K
+        see reate_color_hash_function()
  
+ 
+Interpretation:
+ 
+   For color_0 a when two nodes, either within the same graph or between graphs, have the same color C, they are very likely the same node.
+       Because hashing is deterministic there is no possibility of a False Negative, but a 1/K possibility of a False Positive due to random hash collisions.
+ 
+   color_1: contains all the 1-hop information around the node.
+       If two nodes have the same color it is very likely that they have the same 1 hop neighborhood.
+       The probability of a false positive here is still very close to zero but I haven't worked it out yet.
+ increase
+ 
+Usages:
+ 
+    Node Embedding: Nodes are embedded as an integer such that when two nodes share a color their local neighborhoods are very likely identical.
+    
+    Graph Embedding: Graphs can be embedded as a histogram of node colors. eg the more similar colors the more similar the graphs are.
+
+    
+    For example these graphs are converted into vectors and then there are lots of different ways to measure distance between them.
+    
+                    [Color: count of nodes]
+    Graph_A.Color_3  = [1:2, 2:0, 3:3]
+    Graph_B.Color_3  = [1:2, 2:1, 3:2]
+
 """
  
 
@@ -173,3 +173,4 @@ def embedd_graph_with_color_refinement(G: nx.classes.graph.Graph, K:int, num_buc
     bag_of_colors_df = compute_call_color_bag(embedding_df,num_buckets)
     return bag_of_colors_df
 
+# how to find optimal K for buckets?
