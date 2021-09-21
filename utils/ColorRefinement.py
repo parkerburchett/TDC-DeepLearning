@@ -8,6 +8,8 @@ import pandas as pd
 import networkx as nx
 import copy
 
+from pandas.core.frame import DataFrame
+
 """
 
 This is an implementation of the Color Refinement algorithm 
@@ -60,7 +62,7 @@ Usages:
 
 ###################### Need to refactor before pushing to PIP ###########################
 
-def create_color_hash_function(num_buckets: int):
+def _create_color_hash_function(num_buckets: int):
 
     def get_next_node_color(node_color:int, neighbor_colors:list)-> int:
         pre_hash_color = str(node_color) + str(np.prod(neighbor_colors))
@@ -71,7 +73,7 @@ def create_color_hash_function(num_buckets: int):
     return hash_function
 
 
-def convert_node_view_to_node_color_dict(node_data: nx.classes.reportviews.NodeDataView, num_buckets: int)-> dict:
+def _convert_node_view_to_node_color_dict(node_data: nx.classes.reportviews.NodeDataView, num_buckets: int)-> dict:
     """
         Set the inital color of each of the nodes based on hashing the node attributes and a number of buckets. 
 
@@ -90,9 +92,9 @@ def convert_node_view_to_node_color_dict(node_data: nx.classes.reportviews.NodeD
     return node_starting_colors
 
 
-def create_inital_color_graph(graph: nx.classes.graph.Graph, num_buckets:int) ->nx.classes.graph.Graph:
+def _create_inital_color_graph(graph: nx.classes.graph.Graph, num_buckets:int) ->nx.classes.graph.Graph:
 
-    starting_colors = convert_node_view_to_node_color_dict(graph.nodes.data(True), num_buckets)
+    starting_colors = _convert_node_view_to_node_color_dict(graph.nodes.data(True), num_buckets)
     color_graph = copy.deepcopy(graph)
     nx.set_node_attributes(color_graph, starting_colors, name="color_0")
 
@@ -105,7 +107,7 @@ def create_inital_color_graph(graph: nx.classes.graph.Graph, num_buckets:int) ->
     return color_graph
 
 
-def next_iteration_of_color_graph(color_graph, iter_num:int, color_hashing_function) -> None:
+def _next_iteration_of_color_graph(color_graph, iter_num:int, color_hashing_function) -> None:
     prev_color_key = f'color_{iter_num-1}'
 
     # do an iteration
@@ -118,100 +120,98 @@ def next_iteration_of_color_graph(color_graph, iter_num:int, color_hashing_funct
 
     nx.set_node_attributes(color_graph, updated_colors, name=f'color_{iter_num}')
 
-def compute_K_color_refinements(G: nx.classes.graph.Graph, K:int, num_buckets:int) ->nx.classes.graph.Graph:
+def _compute_K_color_refinements(G: nx.classes.graph.Graph, K:int, num_buckets:int) ->nx.classes.graph.Graph:
     """
     Given a graph G and a hash_function f, compute K iterations of the color refinement algorithm (link to algo)
     """
-    color_hashing_function = create_color_hash_function(num_buckets)
-    color_graph = create_inital_color_graph(G, num_buckets)
+    color_hashing_function = _create_color_hash_function(num_buckets)
+    color_graph = _create_inital_color_graph(G, num_buckets)
 
     for iter_num in range(1,K):
-        next_iteration_of_color_graph(color_graph, iter_num=iter_num, color_hashing_function=color_hashing_function)
+        _next_iteration_of_color_graph(color_graph, iter_num=iter_num, color_hashing_function=color_hashing_function)
     return color_graph
 
 
-def extact_node_colors(node, node_num)-> tuple:
+def _extact_node_colors(node, node_num)-> tuple:
     df = pd.DataFrame.from_dict(node.items())
     df.columns = ['iteration_number', f'Node_{node_num}']
     df.set_index('iteration_number', inplace=True)
     return df
 
-def convert_color_graph_to_DataFrame(color_graph: nx.classes.graph.Graph) -> pd.DataFrame:
+
+def _convert_color_graph_to_DataFrame(color_graph: nx.classes.graph.Graph) -> pd.DataFrame:
     """
         Converts the node colors into a pandas data frame where the rows are the iterations and the columns are the node colors
     """
     color_node_view = color_graph.nodes.data(True)
-    node_colors = [extact_node_colors(color_node_view[i], i) for i in range(0,len(color_node_view))]
+    node_colors = [_extact_node_colors(color_node_view[i], i) for i in range(0,len(color_node_view))]
     df = pd.concat(node_colors, axis=1)
     return df
 
 
-def compute_graph_embeddings(G: nx.classes.graph.Graph, K:int, num_buckets:int) -> pd.DataFrame:
-    color_graph = compute_K_color_refinements(G=G, K=K, num_buckets=num_buckets)
-    embedding_df = convert_color_graph_to_DataFrame(color_graph=color_graph)
-    return embedding_df
-
-
-def compute_bag_of_colors_vector(iteration_colors: np.array, num_buckets:int):
+def _compute_bag_of_colors_vector(iteration_colors: np.array, num_buckets:int):
     bag_of_colors = np.zeros(shape=num_buckets).astype(int)
     for color in iteration_colors:
         bag_of_colors[color] +=1
     return bag_of_colors
 
 
+def _compute_node_colors(G: nx.classes.graph.Graph, K:int, num_buckets:int) -> pd.DataFrame:
+    color_graph = _compute_K_color_refinements(G=G, K=K, num_buckets=num_buckets)
+    node_color_df = _convert_color_graph_to_DataFrame(color_graph=color_graph)
+    return node_color_df
 
-def compute_call_color_bag(embedding_df: pd.DataFrame, num_buckets:int) -> pd.DataFrame:
-    bag_of_colors_df = pd.DataFrame(index= embedding_df.index, columns=[a for a in range(num_buckets)])
+
+def _node_color_df_to_bag_of_colors(node_color_df: pd.DataFrame, num_colors:int) -> pd.DataFrame:
+    bag_of_colors_df = pd.DataFrame(index= node_color_df.index, columns=[a for a in range(num_colors)])
     for iteration_name in bag_of_colors_df.index:
-        iteration_colors = embedding_df.loc[iteration_name].values
-        bag_of_colors_vector = compute_bag_of_colors_vector(iteration_colors, num_buckets)
+        iteration_colors = node_color_df.loc[iteration_name].values
+        bag_of_colors_vector = _compute_bag_of_colors_vector(iteration_colors, num_colors)
         bag_of_colors_df.loc[iteration_name, :] = bag_of_colors_vector
-
     return bag_of_colors_df
 
 
-def embedd_graph_with_color_refinement(G: nx.classes.graph.Graph, K:int, num_buckets:int) -> pd.DataFrame:
-    embedding_df = compute_graph_embeddings(G,K,num_buckets)
-    bag_of_colors_df = compute_call_color_bag(embedding_df,num_buckets)
-    return bag_of_colors_df
 
-
-def get_n_dem_embedding(color_graphs:list, n:int) -> pd.DataFrame:
+def compute_graph_embedding(G:nx.graph.Graph, num_hops: int, num_colors:int)-> DataFrame:
     """
-        Givens a list of color graphs, and a int n. extact all the embeddings of the embedding N.
+        Convert the Graph G into a Dataframe where each row is a 'bag of colors of the n hop color refinement algorithm' 
+        and each column is the count of the colors in that graph at that hop. 
 
-        Eg If you pass 10 color graphs and n=3
+        This is a deterministic algorithm. 
 
-        number_of_colors = number of columns in each color graph. Must be the same for each graph.
+        graph_embedding: pd.DataFrame with shape (num_hops, num_colors)
 
-        Returns a a DataFrame of (10,number_of_colors) where is row is a graph and embedded as a 'bag of colors'
     """
-    embeddings = []
-    for g in color_graphs: # is a dataframe
-        embeddings.append(g.values[n,:])
-    return pd.DataFrame(np.array(embeddings))
+    node_color_df = _compute_node_colors(G, num_hops, num_colors)
+    graph_embedding = _node_color_df_to_bag_of_colors(node_color_df,num_colors)
+    return graph_embedding
 
 
-def embedd_graphs(graphs:list, num_hops:int, num_colors:int) -> list:
+def extract_n_hop_features(list_of_graph_embeddings:list, hop_number:int) -> list:
     """
-        Given a list of graphs: graphs, num_hops and num_colors create a list of DataFrames where each Dataframe is a hop embedding of that graph.
+        Given a list of graph of embeddings, and a hop_number create a DataFrame where is row is the 'bag of colors at hop_number'
+    """
+    n_hop_features = []
+    for df in list_of_graph_embeddings:
+        n_hop_features.append(df.values[hop_number,:])
+    return pd.DataFrame(np.array(n_hop_features))
+
+
+
+def create_hop_feature_dfs(graphs:list, num_hops: int, num_colors:int) -> list:
+    """
+        Given a list of graphs, num_hops, num_colors calcuates a data frame of the bag of colors 
+
+        returns num_colors DataFrames where each df is the N_hop embedding of the graph. 
         
-        Each df where each row is a 'bag of colors' vector for each graph.
-
-        The only method that should be called by the outside
-    """
-
-    color_graphs = [compute_graph_embeddings(G=g,K=num_hops, num_buckets=num_colors) for g in graphs]
-    print('in embedd_graphs')
-    # is correct
-    print('color graph is type')
-    print(type(color_graphs))
-    print('one instance is ')
-    print(type(color_graphs[0]))
+        For example in 3rd DataFrame each row is a graph, and each column si the count of each color found after 3 hops of ColorRefinement/
     
-    embeddings_dfs = []
-    for hop_num in range(num_hops):
-        df = get_n_dem_embedding(color_graphs=color_graphs,n=hop_num) 
-        embeddings_dfs.append(df)
-    return embeddings_dfs
+    """
+    list_of_graph_embeddings = [compute_graph_embedding(g, num_hops, num_colors) for g in graphs]
+    feature_dfs = [extract_n_hop_features(list_of_graph_embeddings, hop_num) for hop_num in range(num_hops)]
+    return feature_dfs
+
+
+
+
 
