@@ -58,6 +58,8 @@ Usages:
 """
  
 
+###################### Need to refactor before pushing to PIP ###########################
+
 def create_color_hash_function(num_buckets: int):
 
     def get_next_node_color(node_color:int, neighbor_colors:list)-> int:
@@ -185,7 +187,7 @@ def get_n_dem_embedding(color_graphs:list, n:int) -> pd.DataFrame:
         Returns a a DataFrame of (10,number_of_colors) where is row is a graph and embedded as a 'bag of colors'
     """
     embeddings = []
-    for g in color_graphs:
+    for g in color_graphs: # is a dataframe
         embeddings.append(g.values[n,:])
     return pd.DataFrame(np.array(embeddings))
 
@@ -199,7 +201,14 @@ def embedd_graphs(graphs:list, num_hops:int, num_colors:int) -> list:
         The only method that should be called by the outside
     """
 
-    color_graphs = [compute_K_color_refinements(G=g,K=num_hops, num_buckets=num_colors) for g in graphs]
+    color_graphs = [compute_graph_embeddings(G=g,K=num_hops, num_buckets=num_colors) for g in graphs]
+    print('in embedd_graphs')
+    # is correct
+    print('color graph is type')
+    print(type(color_graphs))
+    print('one instance is ')
+    print(type(color_graphs[0]))
+    
     embeddings_dfs = []
     for hop_num in range(num_hops):
         df = get_n_dem_embedding(color_graphs=color_graphs,n=hop_num) 
