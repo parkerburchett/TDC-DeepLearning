@@ -173,4 +173,36 @@ def embedd_graph_with_color_refinement(G: nx.classes.graph.Graph, K:int, num_buc
     bag_of_colors_df = compute_call_color_bag(embedding_df,num_buckets)
     return bag_of_colors_df
 
-# how to find optimal K for buckets?
+
+def get_n_dem_embedding(color_graphs:list, n:int) -> pd.DataFrame:
+    """
+        Givens a list of color graphs, and a int n. extact all the embeddings of the embedding N.
+
+        Eg If you pass 10 color graphs and n=3
+
+        number_of_colors = number of columns in each color graph. Must be the same for each graph.
+
+        Returns a a DataFrame of (10,number_of_colors) where is row is a graph and embedded as a 'bag of colors'
+    """
+    embeddings = []
+    for g in color_graphs:
+        embeddings.append(g.values[n,:])
+    return pd.DataFrame(np.array(embeddings))
+
+
+def embedd_graphs(graphs:list, num_hops:int, num_colors:int) -> list:
+    """
+        Given a list of graphs: graphs, num_hops and num_colors create a list of DataFrames where each Dataframe is a hop embedding of that graph.
+        
+        Each df where each row is a 'bag of colors' vector for each graph.
+
+        The only method that should be called by the outside
+    """
+
+    color_graphs = [compute_K_color_refinements(G=g,K=num_hops, num_buckets=num_colors) for g in graphs]
+    embeddings_dfs = []
+    for hop_num in range(num_hops):
+        df = get_n_dem_embedding(color_graphs=color_graphs,n=hop_num) 
+        embeddings_dfs.append(df)
+    return embeddings_dfs
+
