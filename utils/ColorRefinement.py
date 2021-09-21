@@ -197,7 +197,7 @@ def extract_n_hop_features(list_of_graph_embeddings:list, hop_number:int) -> lis
     return pd.DataFrame(np.array(n_hop_features))
 
 
-
+# CALL THIS EXTERNALLY
 def create_hop_feature_dfs(graphs:list, num_hops: int, num_colors:int) -> list:
     """
         Given a list of graphs, num_hops, num_colors calcuates a data frame of the bag of colors 
